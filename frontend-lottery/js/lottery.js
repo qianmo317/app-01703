@@ -278,6 +278,131 @@ const Lottery = {
             el.style.fontSize = '20px';
         });
     },
+
+    /**
+     * 批量揭晓中奖者 - 依次减速定格动画
+     */
+    async revealBatchWinners(winners, availableParticipants) {
+        const sphere = this._getElement('lotterySphere');
+        const winnerDisplay = this._getElement('winnerDisplay');
+        const winnerName = this._getElement('winnerName');
+
+        if (!sphere || !winnerDisplay || !winnerName) {
+            this.isRunning = false;
+            return [];
+        }
+
+        if (this.spinInterval) {
+            clearInterval(this.spinInterval);
+            this.spinInterval = null;
+        }
+
+        const settings = LotteryStorage.getSettings();
+        const speed = settings.lotterySpeed || 'normal';
+        const intervalTime = speed === 'fast' ? 50 : (speed === 'slow' ? 150 : 80);
+
+        const revealedWinners = [];
+
+        for (let i = 0; i < winners.length; i++) {
+            const winner = winners[i];
+
+            if (i > 0) {
+                await new Promise(r => setTimeout(r, 1200));
+
+                winnerName.classList.remove('final-reveal', 'blur-shake');
+                sphere.classList.remove('slow');
+                sphere.classList.add('spinning');
+                if (speed === 'fast') sphere.classList.add('fast');
+
+                const remainingParticipants = availableParticipants.filter(
+                    p => !revealedWinners.some(w => w.id === p.id)
+                );
+                const participantsForSpin = remainingParticipants.length > 0 ? remainingParticipants : availableParticipants;
+
+                await new Promise((spinResolve) => {
+                    const spinInt = setInterval(() => {
+                        if (participantsForSpin.length > 0) {
+                            const rp = participantsForSpin[Math.floor(Math.random() * participantsForSpin.length)];
+                            if (rp && rp.name) {
+                                winnerName.textContent = rp.name;
+                                winnerDisplay.classList.add('show');
+                            }
+                        }
+                    }, intervalTime);
+
+                    setTimeout(() => {
+                        clearInterval(spinInt);
+                        spinResolve();
+                    }, 800);
+                });
+            }
+
+            const remainingForDecelerate = availableParticipants.filter(
+                p => !revealedWinners.some(w => w.id === p.id)
+            );
+            const participantsForDecelerate = remainingForDecelerate.length > 0 ? remainingForDecelerate : availableParticipants;
+            await this._singleDecelerate(winner, participantsForDecelerate, winnerName, winnerDisplay, sphere);
+            this._highlightWinner(winner);
+            revealedWinners.push(winner);
+
+            Logger.info('Batch winner revealed', { index: i + 1, total: winners.length, winnerName: winner.name });
+        }
+
+        sphere.classList.remove('spinning', 'fast', 'slow');
+        this.isRunning = false;
+
+        Logger.action('BATCH_REVEAL_COMPLETE', { winnerCount: revealedWinners.length });
+        return revealedWinners;
+    },
+
+    /**
+     * 单次减速定格动画
+     */
+    _singleDecelerate(winner, participants, winnerName, winnerDisplay, sphere) {
+        return new Promise((resolve) => {
+            let slowdownCount = 0;
+            const maxSlowdown = 12;
+
+            winnerName.classList.add('blur-shake');
+
+            const slowdownStep = () => {
+                slowdownCount++;
+                const delay = 100 + (slowdownCount * 80);
+
+                if (slowdownCount >= maxSlowdown) {
+                    winnerName.textContent = winner.name;
+                    winnerName.classList.remove('blur-shake');
+                    winnerName.classList.add('final-reveal');
+
+                    sphere.classList.remove('fast');
+                    sphere.classList.add('slow');
+
+                    setTimeout(() => resolve(), 800);
+                } else {
+                    if (slowdownCount >= maxSlowdown - 2) {
+                        winnerName.textContent = winner.name;
+                    } else {
+                        const prob = slowdownCount / maxSlowdown;
+                        if (Math.random() < prob * 0.8) {
+                            winnerName.textContent = winner.name;
+                        } else if (participants.length > 0) {
+                            const rp = participants[Math.floor(Math.random() * participants.length)];
+                            winnerName.textContent = rp ? rp.name : winner.name;
+                        }
+                    }
+
+                    if (slowdownCount > maxSlowdown / 2) {
+                        sphere.classList.remove('fast');
+                        sphere.classList.add('slow');
+                    }
+
+                    setTimeout(slowdownStep, delay);
+                }
+            };
+
+            setTimeout(slowdownStep, 100);
+        });
+    },
     
     getState() {
         return {

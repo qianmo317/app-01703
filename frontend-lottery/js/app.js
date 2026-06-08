@@ -6,6 +6,7 @@
 // 全局状态
 let currentPrizeId = null;
 let isLotteryRunning = false;
+let lotteryMode = 'single';
 
 // 随机姓名库
 const SURNAMES = ['张', '王', '李', '赵', '刘', '陈', '杨', '黄', '周', '吴', '徐', '孙', '马', '朱', '胡', '郭', '何', '林', '罗', '高'];
@@ -260,11 +261,75 @@ function selectPrize(prizeId) {
         // 重新初始化3D球体
         Lottery.initSphere(availableParticipants);
         
+        // 更新模式切换UI
+        updateLotteryModeUI();
+        
+        // 更新抽奖按钮文字
+        const lotteryBtnText = document.getElementById('lotteryBtnText');
+        if (lotteryBtnText && !isLotteryRunning) {
+            lotteryBtnText.textContent = lotteryMode === 'batch' ? '批量抽奖' : '开始抽奖';
+        }
+        
         Logger.info('Prize selected', { prizeId, prizeName: prize.name });
     } catch (error) {
         Logger.error('Failed to select prize', { error: error.message, prizeId });
         showToast('选择奖品失败', 'error');
     }
+}
+
+/**
+ * 更新抽奖模式切换UI
+ */
+function updateLotteryModeUI() {
+    const modeToggle = document.getElementById('lotteryModeToggle');
+    const modeSingleBtn = document.getElementById('modeSingleBtn');
+    const modeBatchBtn = document.getElementById('modeBatchBtn');
+    
+    if (!modeToggle) return;
+    
+    if (!currentPrizeId) {
+        modeToggle.style.display = 'none';
+        return;
+    }
+    
+    const prizes = LotteryStorage.getPrizes();
+    const prize = prizes.find(p => p.id === currentPrizeId);
+    
+    if (!prize) {
+        modeToggle.style.display = 'none';
+        return;
+    }
+    
+    const remainingCount = prize.count - (prize.drawnCount || 0);
+    
+    if (remainingCount > 1) {
+        modeToggle.style.display = 'flex';
+        if (modeSingleBtn) modeSingleBtn.classList.toggle('active', lotteryMode === 'single');
+        if (modeBatchBtn) modeBatchBtn.classList.toggle('active', lotteryMode === 'batch');
+    } else {
+        modeToggle.style.display = 'none';
+        lotteryMode = 'single';
+    }
+}
+
+/**
+ * 切换抽奖模式
+ */
+function setLotteryMode(mode) {
+    if (isLotteryRunning) {
+        showToast('抽奖进行中，无法切换模式', 'warning');
+        return;
+    }
+    
+    lotteryMode = mode;
+    updateLotteryModeUI();
+    
+    const lotteryBtnText = document.getElementById('lotteryBtnText');
+    if (lotteryBtnText) {
+        lotteryBtnText.textContent = mode === 'batch' ? '批量抽奖' : '开始抽奖';
+    }
+    
+    Logger.info('Lottery mode changed', { mode });
 }
 
 
@@ -308,65 +373,159 @@ async function toggleLottery() {
         } else {
             // 停止抽奖
             lotteryBtn.disabled = true;
-            lotteryBtnText.textContent = '抽取中...';
+            lotteryBtnText.textContent = lotteryMode === 'batch' ? '揭晓中...' : '抽取中...';
             
             const availableParticipants = LotteryStorage.getAvailableParticipants();
-            const winner = await Lottery.stop(availableParticipants);
             
-            if (winner) {
-                try {
-                    // 记录中奖
-                    LotteryStorage.addWinner(currentPrizeId, winner);
-                    
-                    // 显示中奖结果
-                    const prizes = LotteryStorage.getPrizes();
-                    const prize = prizes.find(p => p.id === currentPrizeId);
-                    
-                    if (prize) {
-                        showWinnerResult(prize.name, winner);
+            if (lotteryMode === 'batch') {
+                // 批量模式停止逻辑
+                const prizes = LotteryStorage.getPrizes();
+                const prize = prizes.find(p => p.id === currentPrizeId);
+                
+                if (!prize) {
+                    showToast('奖品不存在', 'error');
+                    isLotteryRunning = false;
+                    Lottery.reset();
+                    lotteryBtn.classList.remove('running');
+                    lotteryBtnText.textContent = '批量抽奖';
+                    return;
+                }
+                
+                const remainingCount = prize.count - (prize.drawnCount || 0);
+                const drawCount = Math.min(remainingCount, availableParticipants.length);
+                
+                if (drawCount === 0) {
+                    showToast('没有可参与抽奖的人员', 'warning');
+                    isLotteryRunning = false;
+                    lotteryBtn.classList.remove('running');
+                    lotteryBtnText.textContent = '批量抽奖';
+                    lotteryBtn.disabled = false;
+                    return;
+                }
+                
+                // 预选所有中奖者
+                const batchWinners = [];
+                const tempAvailable = [...availableParticipants];
+                
+                for (let i = 0; i < drawCount; i++) {
+                    let randomIndex;
+                    if (window.crypto && window.crypto.getRandomValues) {
+                        const array = new Uint32Array(1);
+                        window.crypto.getRandomValues(array);
+                        randomIndex = array[0] % tempAvailable.length;
+                    } else {
+                        randomIndex = Math.floor(Math.random() * tempAvailable.length);
                     }
                     
-                    // 更新UI
-                    renderPrizeList();
-                    renderParticipantList();
-                    
-                    // 检查奖品是否抽完
-                    const updatedPrize = LotteryStorage.getPrizes().find(p => p.id === currentPrizeId);
-                    const prizeInfoEl = document.getElementById('currentPrizeInfo');
+                    batchWinners.push(tempAvailable[randomIndex]);
+                    tempAvailable.splice(randomIndex, 1);
+                }
+                
+                Logger.info('Batch lottery winners pre-selected', { count: batchWinners.length });
+                
+                // 依次揭晓
+                const revealedWinners = await Lottery.revealBatchWinners(batchWinners, availableParticipants);
+                
+                // 记录所有中奖者
+                for (const winner of revealedWinners) {
+                    try {
+                        LotteryStorage.addWinner(currentPrizeId, winner);
+                    } catch (error) {
+                        Logger.error('Failed to record batch winner', { error: error.message, winnerId: winner.id });
+                    }
+                }
+                
+                // 更新UI
+                renderPrizeList();
+                renderParticipantList();
+                
+                // 显示批量汇总面板
+                const updatedPrize = LotteryStorage.getPrizes().find(p => p.id === currentPrizeId);
+                const prizeName = updatedPrize ? updatedPrize.name : '未知奖品';
+                showBatchSummaryModal(prizeName, revealedWinners);
+                
+                // 参与者不足提示
+                if (drawCount < remainingCount) {
+                    showToast(`可用参与者不足，实际抽取 ${drawCount} 人（需 ${remainingCount} 人）`, 'warning');
+                }
+                
+                // 检查奖品是否抽完
+                if (updatedPrize && updatedPrize.drawnCount >= updatedPrize.count) {
+                    currentPrizeId = null;
                     const prizeNameEl = document.getElementById('currentPrizeName');
-                    
-                    if (updatedPrize && updatedPrize.drawnCount >= updatedPrize.count) {
-                        currentPrizeId = null;
-                        if (prizeNameEl) prizeNameEl.textContent = '请选择下一个奖品';
-                        if (prizeInfoEl) prizeInfoEl.textContent = '当前奖品已抽完';
-                        lotteryBtn.disabled = true;
-                    } else if (updatedPrize && prizeInfoEl) {
-                        prizeInfoEl.textContent = `剩余 ${updatedPrize.count - updatedPrize.drawnCount} 个名额`;
+                    const prizeInfoEl = document.getElementById('currentPrizeInfo');
+                    if (prizeNameEl) prizeNameEl.textContent = '请选择下一个奖品';
+                    if (prizeInfoEl) prizeInfoEl.textContent = '当前奖品已抽完';
+                    lotteryBtn.disabled = true;
+                } else if (updatedPrize) {
+                    const prizeInfoEl = document.getElementById('currentPrizeInfo');
+                    if (prizeInfoEl) prizeInfoEl.textContent = `剩余 ${updatedPrize.count - updatedPrize.drawnCount} 个名额`;
+                }
+                
+                // 重新初始化3D球体
+                const newAvailable = LotteryStorage.getAvailableParticipants();
+                Lottery.initSphere(newAvailable);
+                
+                if (newAvailable.length === 0 && currentPrizeId) {
+                    lotteryBtn.disabled = true;
+                    showToast('所有人员已中奖', 'success');
+                }
+            } else {
+                // 单抽模式停止逻辑
+                const winner = await Lottery.stop(availableParticipants);
+                
+                if (winner) {
+                    try {
+                        LotteryStorage.addWinner(currentPrizeId, winner);
+                        
+                        const prizes = LotteryStorage.getPrizes();
+                        const prize = prizes.find(p => p.id === currentPrizeId);
+                        
+                        if (prize) {
+                            showWinnerResult(prize.name, winner);
+                        }
+                        
+                        renderPrizeList();
+                        renderParticipantList();
+                        
+                        const updatedPrize = LotteryStorage.getPrizes().find(p => p.id === currentPrizeId);
+                        const prizeInfoEl = document.getElementById('currentPrizeInfo');
+                        const prizeNameEl = document.getElementById('currentPrizeName');
+                        
+                        if (updatedPrize && updatedPrize.drawnCount >= updatedPrize.count) {
+                            currentPrizeId = null;
+                            if (prizeNameEl) prizeNameEl.textContent = '请选择下一个奖品';
+                            if (prizeInfoEl) prizeInfoEl.textContent = '当前奖品已抽完';
+                            lotteryBtn.disabled = true;
+                        } else if (updatedPrize && prizeInfoEl) {
+                            prizeInfoEl.textContent = `剩余 ${updatedPrize.count - updatedPrize.drawnCount} 个名额`;
+                        }
+                        
+                        const newAvailable = LotteryStorage.getAvailableParticipants();
+                        Lottery.initSphere(newAvailable);
+                        
+                        if (newAvailable.length === 0) {
+                            lotteryBtn.disabled = true;
+                            showToast('所有人员已中奖', 'success');
+                        }
+                    } catch (error) {
+                        Logger.error('Failed to record winner', { error: error.message });
+                        showToast('记录中奖信息失败: ' + error.message, 'error');
                     }
-                    
-                    // 重新初始化3D球体（移除已中奖者）
-                    const newAvailable = LotteryStorage.getAvailableParticipants();
-                    Lottery.initSphere(newAvailable);
-                    
-                    if (newAvailable.length === 0) {
-                        lotteryBtn.disabled = true;
-                        showToast('所有人员已中奖', 'success');
-                    }
-                } catch (error) {
-                    Logger.error('Failed to record winner', { error: error.message });
-                    showToast('记录中奖信息失败: ' + error.message, 'error');
                 }
             }
             
             isLotteryRunning = false;
             lotteryBtn.classList.remove('running');
-            lotteryBtnText.textContent = '开始抽奖';
+            lotteryBtnText.textContent = lotteryMode === 'batch' ? '批量抽奖' : '开始抽奖';
             
             // 重新检查按钮状态
             const newAvailable = LotteryStorage.getAvailableParticipants();
             if (currentPrizeId && newAvailable.length > 0) {
                 lotteryBtn.disabled = false;
             }
+            
+            updateLotteryModeUI();
         }
     } catch (error) {
         Logger.error('Lottery toggle failed', { error: error.message, stack: error.stack });
@@ -383,7 +542,7 @@ async function toggleLottery() {
             lotteryBtn.disabled = false;
         }
         if (lotteryBtnText) {
-            lotteryBtnText.textContent = '开始抽奖';
+            lotteryBtnText.textContent = lotteryMode === 'batch' ? '批量抽奖' : '开始抽奖';
         }
     }
 }
@@ -405,6 +564,35 @@ function showWinnerResult(prizeName, winner) {
         showModal('winnerResultModal');
     } catch (error) {
         Logger.error('Failed to show winner result', { error: error.message });
+    }
+}
+
+/**
+ * 显示批量抽奖汇总面板
+ */
+function showBatchSummaryModal(prizeName, winners) {
+    try {
+        const prizeNameEl = document.getElementById('batchSummaryPrizeName');
+        const listEl = document.getElementById('batchSummaryList');
+        
+        if (prizeNameEl) prizeNameEl.textContent = prizeName || '未知奖品';
+        
+        if (listEl) {
+            listEl.innerHTML = winners.map((w, index) => `
+                <div class="batch-summary-item" style="animation-delay: ${index * 0.1}s">
+                    <span class="batch-summary-index">${index + 1}</span>
+                    <span class="batch-summary-name">${escapeHtml(w.name || '未知')}</span>
+                    <span class="batch-summary-dept">${escapeHtml(w.department || '')}</span>
+                </div>
+            `).join('');
+        }
+        
+        createFireworks();
+        showModal('batchSummaryModal');
+        
+        Logger.info('Batch summary modal shown', { prizeName, winnerCount: winners.length });
+    } catch (error) {
+        Logger.error('Failed to show batch summary', { error: error.message });
     }
 }
 
@@ -534,6 +722,7 @@ async function deletePrize(prizeId) {
         
         renderPrizeList();
         showToast('奖品已删除', 'success');
+        updateLotteryModeUI();
         
     } catch (error) {
         Logger.error('Failed to delete prize', { error: error.message, prizeId });
@@ -1349,6 +1538,7 @@ window.LotteryDebug = {
     getState: () => ({
         currentPrizeId,
         isLotteryRunning,
+        lotteryMode,
         lotteryState: Lottery.getState()
     })
 };

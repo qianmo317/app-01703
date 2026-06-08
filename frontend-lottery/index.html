@@ -49,6 +49,10 @@
 
             <!-- 控制按钮 -->
             <div class="lottery-controls">
+                <div class="lottery-mode-toggle" id="lotteryModeToggle" style="display: none;">
+                    <button class="mode-btn active" id="modeSingleBtn" onclick="setLotteryMode('single')">单抽</button>
+                    <button class="mode-btn" id="modeBatchBtn" onclick="setLotteryMode('batch')">批量</button>
+                </div>
                 <button class="btn btn-lottery" id="lotteryBtn" onclick="toggleLottery()" disabled>
                     <span id="lotteryBtnText">开始抽奖</span>
                 </button>
@@ -167,6 +171,23 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-primary" onclick="closeModal('winnerResultModal')">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量抽奖汇总弹窗 -->
+    <div class="modal" id="batchSummaryModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>🎉 批量抽奖结果</h3>
+                <button class="modal-close" onclick="closeModal('batchSummaryModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="batch-summary-prize" id="batchSummaryPrizeName"></div>
+                <div class="batch-summary-list" id="batchSummaryList"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeModal('batchSummaryModal')">确定</button>
             </div>
         </div>
     </div>
