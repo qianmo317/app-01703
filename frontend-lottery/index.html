@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D幸运抽奖</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 背景层 -->
+    <div id="background-layer"></div>
+    
+    <!-- 粒子装饰 -->
+    <div class="particles" id="particles"></div>
+    
+    <!-- 主容器 -->
+    <div class="main-container">
+        <!-- 左侧奖品面板 -->
+        <aside class="prize-panel">
+            <div class="panel-header">
+                <h2>🎁 奖品设置</h2>
+                <button class="btn btn-small btn-primary" onclick="showAddPrizeModal()">+ 添加奖品</button>
+            </div>
+            <div class="prize-list" id="prizeList">
+                <!-- 动态生成奖品列表 -->
+            </div>
+            <div class="panel-actions">
+                <button class="btn btn-secondary" onclick="showWinnerListModal()">📋 中奖名单</button>
+                <button class="btn btn-secondary" onclick="showSettingsModal()">⚙️ 设置</button>
+            </div>
+        </aside>
+
+        <!-- 中央抽奖区域 -->
+        <main class="lottery-area">
+            <div class="lottery-title">
+                <h1 id="currentPrizeName">请先选择奖品</h1>
+                <p id="currentPrizeInfo">点击左侧奖品开始抽奖</p>
+            </div>
+            
+            <!-- 3D抽奖容器 -->
+            <div class="lottery-3d-container">
+                <div class="lottery-sphere" id="lotterySphere">
+                    <!-- 动态生成姓名标签 -->
+                </div>
+                <div class="winner-display" id="winnerDisplay">
+                    <span class="winner-name" id="winnerName"></span>
+                </div>
+            </div>
+
+            <!-- 控制按钮 -->
+            <div class="lottery-controls">
+                <button class="btn btn-lottery" id="lotteryBtn" onclick="toggleLottery()" disabled>
+                    <span id="lotteryBtnText">开始抽奖</span>
+                </button>
+            </div>
+        </main>
+
+        <!-- 右侧名单面板 -->
+        <aside class="participant-panel">
+            <div class="panel-header">
+                <h2>👥 参与名单</h2>
+                <span class="participant-count" id="participantCount">0人</span>
+            </div>
+            <div class="panel-actions-top">
+                <button class="btn btn-small btn-secondary" onclick="generateRandomParticipants()">随机</button>
+                <button class="btn btn-small btn-secondary" onclick="triggerFileUpload()">导入</button>
+                <button class="btn btn-small btn-secondary" onclick="downloadTemplate()">模板</button>
+                <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" onchange="handleFileUpload(event)">
+            </div>
+            <div class="participant-list" id="participantList">
+                <!-- 动态生成参与者列表 -->
+            </div>
+            <div class="panel-footer">
+                <button class="btn btn-danger btn-small" onclick="clearParticipants()">清空名单</button>
+            </div>
+        </aside>
+    </div>
+
+    <!-- 添加奖品弹窗 -->
+    <div class="modal" id="addPrizeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>添加奖品</h3>
+                <button class="modal-close" onclick="closeModal('addPrizeModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>奖品名称</label>
+                    <input type="text" id="prizeName" placeholder="例如：一等奖" maxlength="20">
+                </div>
+                <div class="form-group">
+                    <label>中奖人数</label>
+                    <input type="number" id="prizeCount" placeholder="例如：3" min="1" max="100">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('addPrizeModal')">取消</button>
+                <button class="btn btn-primary" onclick="addPrize()">确认添加</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 中奖名单弹窗 -->
+    <div class="modal" id="winnerListModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>🏆 中奖名单</h3>
+                <button class="modal-close" onclick="closeModal('winnerListModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="winner-list-container" id="winnerListContainer">
+                    <!-- 动态生成中奖名单 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="exportWinnerList()">导出名单</button>
+                <button class="btn btn-primary" onclick="closeModal('winnerListModal')">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置弹窗 -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⚙️ 系统设置</h3>
+                <button class="modal-close" onclick="closeModal('settingsModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>背景图片</label>
+                    <div class="file-upload-area" onclick="triggerBgUpload()">
+                        <span id="bgUploadText">点击上传背景图片</span>
+                        <input type="file" id="bgInput" accept="image/*" style="display:none" onchange="handleBgUpload(event)">
+                    </div>
+                    <div class="bg-preview-container" id="bgPreviewContainer" style="display:none;">
+                        <img id="bgPreviewImg" src="" alt="背景预览">
+                        <button class="btn btn-small btn-danger" onclick="clearBgPreview()">移除</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>抽奖速度</label>
+                    <select id="lotterySpeed">
+                        <option value="fast">快速</option>
+                        <option value="normal" selected>正常</option>
+                        <option value="slow">慢速</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" onclick="resetAllData()">重置所有数据</button>
+                <button class="btn btn-primary" onclick="saveSettings()">保存设置</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 中奖结果弹窗 -->
+    <div class="modal" id="winnerResultModal">
+        <div class="modal-content modal-winner">
+            <div class="modal-header">
+                <h3>🎉 恭喜中奖</h3>
+                <button class="modal-close" onclick="closeModal('winnerResultModal')">&times;</button>
+            </div>
+            <div class="modal-body winner-result-body">
+                <div class="winner-prize-name" id="resultPrizeName"></div>
+                <div class="winner-info" id="resultWinnerInfo"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeModal('winnerResultModal')">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通用确认弹窗 -->
+    <div class="modal" id="confirmModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="confirmTitle">确认操作</h3>
+                <button class="modal-close" onclick="closeConfirmModal(false)">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage" style="text-align: center; font-size: 16px; line-height: 1.8;"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeConfirmModal(false)">取消</button>
+                <button class="btn btn-primary" id="confirmOkBtn" onclick="closeConfirmModal(true)">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通用输入弹窗 -->
+    <div class="modal" id="promptModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="promptTitle">请输入</h3>
+                <button class="modal-close" onclick="closePromptModal(null)">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label id="promptLabel"></label>
+                    <input type="text" id="promptInput" placeholder="">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closePromptModal(null)">取消</button>
+                <button class="btn btn-primary" onclick="submitPromptModal()">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast提示 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- 引入JS -->
+    <script src="js/lib/xlsx.full.min.js"></script>
+    <script src="js/logger.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/lottery.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/tests.js"></script>
+</body>
+</html>

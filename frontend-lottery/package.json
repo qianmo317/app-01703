@@ -1,0 +1,22 @@
+{
+  "name": "3d-lottery",
+  "version": "1.0.0",
+  "description": "3D抽奖系统 - 支持自定义奖品、XLSX导入、背景自定义",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx http-server -p 8081 -c-1",
+    "serve": "npx http-server -p 8081 -c-1",
+    "docker:build": "docker build -t 3d-lottery .",
+    "docker:run": "docker run -p 8081:80 3d-lottery"
+  },
+  "keywords": [
+    "lottery",
+    "3d",
+    "raffle",
+    "抽奖"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {}
+}

@@ -1,0 +1,69 @@
+# ========================================
+# 3D抽奖系统 .gitignore
+# ========================================
+
+# 操作系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE和编辑器
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
+*.iml
+
+# Node.js (如果后续添加构建工具)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+
+# 日志文件
+logs/
+*.log
+
+# 临时文件
+tmp/
+temp/
+*.tmp
+*.temp
+
+# 构建输出
+dist/
+build/
+out/
+
+# Docker相关
+.docker/
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+*.env
+
+# 测试覆盖率
+coverage/
+.nyc_output/
+
+# 缓存
+.cache/
+*.cache
+
+# 备份文件
+*.bak
+*.backup

@@ -1,0 +1,22 @@
+services:
+  # 3D抽奖系统前端
+  lottery:
+    build:
+      context: ./frontend-lottery
+      dockerfile: Dockerfile
+    container_name: lottery-app
+    ports:
+      - "8081:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - lottery-network
+
+networks:
+  lottery-network:
+    driver: bridge
