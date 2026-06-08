@@ -49,6 +49,11 @@
 
             <!-- 控制按钮 -->
             <div class="lottery-controls">
+                <!-- 批量/单抽模式切换 -->
+                <div class="mode-switch" id="modeSwitch" style="display: none;">
+                    <button class="mode-btn active" data-mode="single" onclick="switchLotteryMode('single')">单抽</button>
+                    <button class="mode-btn" data-mode="batch" onclick="switchLotteryMode('batch')">批量</button>
+                </div>
                 <button class="btn btn-lottery" id="lotteryBtn" onclick="toggleLottery()" disabled>
                     <span id="lotteryBtnText">开始抽奖</span>
                 </button>
@@ -167,6 +172,27 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-primary" onclick="closeModal('winnerResultModal')">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量中奖汇总弹窗 -->
+    <div class="modal" id="batchResultModal">
+        <div class="modal-content modal-large modal-batch">
+            <div class="modal-header">
+                <h3>🎊 批量抽奖结果</h3>
+                <button class="modal-close" onclick="closeModal('batchResultModal')">&times;</button>
+            </div>
+            <div class="modal-body batch-result-body">
+                <div class="batch-prize-name" id="batchPrizeName"></div>
+                <div class="batch-count-info" id="batchCountInfo"></div>
+                <div class="batch-winner-list" id="batchWinnerList">
+                    <!-- 动态生成中奖名单 -->
+                </div>
+                <div class="batch-warning" id="batchWarning" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeModal('batchResultModal')">确定</button>
             </div>
         </div>
     </div>
