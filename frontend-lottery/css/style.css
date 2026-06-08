@@ -604,9 +604,112 @@ body {
    ======================================== */
 .lottery-controls {
     display: flex;
+    flex-direction: column;
+    align-items: center;
     gap: 20px;
     position: relative;
     z-index: 2;
+}
+
+/* ========================================
+   抽奖模式切换
+   ======================================== */
+.lottery-mode-toggle {
+    display: flex;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 30px;
+    padding: 3px;
+}
+
+.mode-btn {
+    padding: 8px 24px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 27px;
+    transition: all var(--transition-fast);
+    letter-spacing: 1px;
+}
+
+.mode-btn.active {
+    background: var(--gold-gradient);
+    color: #1a1a2e;
+    box-shadow: 0 2px 10px rgba(255, 215, 0, 0.3);
+}
+
+.mode-btn:not(.active):hover {
+    color: var(--text-gold);
+    background: rgba(255, 215, 0, 0.1);
+}
+
+/* ========================================
+   批量抽奖汇总面板
+   ======================================== */
+.batch-summary-prize {
+    font-size: 20px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+    text-align: center;
+}
+
+.batch-summary-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.batch-summary-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 215, 0, 0.1);
+    border-radius: var(--radius-sm);
+    opacity: 0;
+    animation: batchItemIn 0.4s ease forwards;
+}
+
+@keyframes batchItemIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.batch-summary-index {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gold-gradient);
+    color: #1a1a2e;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 50%;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.batch-summary-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-gold);
+    flex: 1;
+}
+
+.batch-summary-dept {
+    font-size: 13px;
+    color: var(--text-muted);
 }
 
 .btn-lottery {
@@ -1257,6 +1360,11 @@ body {
         min-width: 200px;
         padding: 16px 40px;
         font-size: 20px;
+    }
+    
+    .mode-btn {
+        padding: 6px 16px;
+        font-size: 13px;
     }
 }
 
