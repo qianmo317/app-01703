@@ -604,9 +604,133 @@ body {
    ======================================== */
 .lottery-controls {
     display: flex;
-    gap: 20px;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
     position: relative;
     z-index: 2;
+}
+
+/* 抽奖模式切换 - 单抽/批量 */
+.lottery-mode-switch {
+    display: inline-flex;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 999px;
+    padding: 4px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.lottery-mode-switch .mode-option {
+    min-width: 88px;
+    padding: 8px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.lottery-mode-switch .mode-option:hover:not(.active):not(:disabled) {
+    color: var(--text-gold);
+}
+
+.lottery-mode-switch .mode-option.active {
+    background: var(--gold-gradient);
+    color: #1a1a2e;
+    box-shadow: 0 4px 14px rgba(255, 215, 0, 0.35);
+}
+
+.lottery-mode-switch .mode-option:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 批量抽奖汇总弹窗 */
+.batch-summary-header {
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.12) 0%, rgba(220, 20, 60, 0.06) 100%);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: var(--radius-md);
+}
+
+.batch-summary-header .batch-prize-name {
+    font-size: 22px;
+    font-weight: 700;
+    background: var(--gold-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+}
+
+.batch-summary-header .batch-meta {
+    font-size: 13px;
+    color: var(--text-secondary);
+    letter-spacing: 1px;
+}
+
+.batch-summary-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+}
+
+.batch-summary-item {
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 215, 0, 0.12);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all var(--transition-fast);
+}
+
+.batch-summary-item:hover {
+    border-color: rgba(255, 215, 0, 0.3);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.batch-summary-item .batch-index {
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: #1a1a2e;
+    background: var(--gold-gradient);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.batch-summary-item .batch-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.batch-summary-item .batch-dept {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-left: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .btn-lottery {
