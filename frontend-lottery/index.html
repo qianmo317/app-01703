@@ -47,6 +47,18 @@
                 </div>
             </div>
 
+            <!-- 抽奖模式切换 -->
+            <div class="lottery-mode-toggle" id="lotteryModeToggle" style="display: none;">
+                <div class="mode-option active" data-mode="single" onclick="setLotteryMode('single')">
+                    <span class="mode-icon">🎯</span>
+                    <span class="mode-text">单抽模式</span>
+                </div>
+                <div class="mode-option" data-mode="batch" onclick="setLotteryMode('batch')">
+                    <span class="mode-icon">🎊</span>
+                    <span class="mode-text">批量模式</span>
+                </div>
+            </div>
+
             <!-- 控制按钮 -->
             <div class="lottery-controls">
                 <button class="btn btn-lottery" id="lotteryBtn" onclick="toggleLottery()" disabled>
@@ -167,6 +179,27 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-primary" onclick="closeModal('winnerResultModal')">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量抽奖结果汇总弹窗 -->
+    <div class="modal" id="batchResultModal">
+        <div class="modal-content modal-large modal-winner">
+            <div class="modal-header">
+                <h3>🎊 批量抽奖结果</h3>
+                <button class="modal-close" onclick="closeModal('batchResultModal')">&times;</button>
+            </div>
+            <div class="modal-body batch-result-body">
+                <div class="batch-result-prize" id="batchResultPrize"></div>
+                <div class="batch-result-summary" id="batchResultSummary"></div>
+                <div class="batch-winner-list" id="batchWinnerList">
+                    <!-- 动态生成中奖名单 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('batchResultModal')">关闭</button>
+                <button class="btn btn-primary" onclick="exportBatchResult()">导出名单</button>
             </div>
         </div>
     </div>
